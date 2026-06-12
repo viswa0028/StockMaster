@@ -2,8 +2,8 @@ import pandas as pd
 import numpy as np
 import lightgbm as lgb
 import xgboost as xgb
-from catboost import CatBoostRegressor
-from sklearn.ensemble import HistGradientBoostingRegressor
+from catboost import CatBoostClassifier
+from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.model_selection import TimeSeriesSplit
 from sklearn.impute import SimpleImputer
 import os
@@ -139,11 +139,11 @@ for fold, (train_idx, test_idx) in enumerate(tscv.split(X_imputed)):
         colsample_bytree=0.8, random_state=42,
         verbosity=0, scale_pos_weight=4
     )
-    cat = CatBoostRegressor(
+    cat = CatBoostClassifier(
         iterations=1000, learning_rate=0.03,
         depth=6, random_seed=42, verbose=0
     )
-    hgb = HistGradientBoostingRegressor(
+    hgb = HistGradientBoostingClassifier(
         max_iter=1000, learning_rate=0.03,
         max_depth=6, random_state=42
     )
@@ -153,10 +153,12 @@ for fold, (train_idx, test_idx) in enumerate(tscv.split(X_imputed)):
     cat.fit(X_train, y_train)
     hgb.fit(X_train, y_train)
 
+    # Use probability scores for ranking across ALL models
     p_lgbm = lgbm.predict_proba(X_test)[:, 1]
     p_xgb  = xgb_m.predict_proba(X_test)[:, 1]
-    p_cat  = cat.predict(X_test)
-    p_hgb  = hgb.predict(X_test)
+    p_cat  = cat.predict_proba(X_test)[:, 1]
+    p_hgb  = hgb.predict_proba(X_test)[:, 1]
+    
     p_ens  = (p_lgbm + p_xgb + p_cat + p_hgb) / 4
 
     from sklearn.metrics import roc_auc_score
