@@ -1,2 +1,5 @@
 data/
 .DS_Store
+docker-compose.yml
+saved_models/
+catboost_info/
