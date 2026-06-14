@@ -3,7 +3,6 @@ import pandas as pd
 import os, time
 from datetime import date
 
-# Get Nifty 500 list
 url = "https://archives.nseindia.com/content/indices/ind_nifty500list.csv"
 nifty500 = pd.read_csv(url)
 symbols = [s + ".NS" for s in nifty500['Symbol'].tolist()]

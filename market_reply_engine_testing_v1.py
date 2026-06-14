@@ -76,10 +76,17 @@ def run_historical_playback_for_date(target_date_str="2019-11-11"):
             df = add_features(df)
             
             # Find the specific row for target_date
-            if target_date not in df.index:
-                continue
+            if target_date in df.index:
+                actual_date = target_date
+            else:
+                # Look back up to 14 days to find the most recent available data
+                past_dates = df.index[df.index <= target_date]
+                if len(past_dates) > 0 and (target_date - past_dates[-1]).days <= 14:
+                    actual_date = past_dates[-1]
+                else:
+                    continue
                 
-            idx = df.index.get_loc(target_date)
+            idx = df.index.get_loc(actual_date)
             latest = df.iloc[idx]
             
             # Check Minervini trend conditions
@@ -174,4 +181,4 @@ def run_historical_playback_for_date(target_date_str="2019-11-11"):
 
 if __name__ == "__main__":
     # Play back a historical day
-    run_historical_playback_for_date("2019-11-11")
+    run_historical_playback_for_date("2026-01-01")
