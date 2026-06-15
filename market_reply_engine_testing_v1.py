@@ -3,6 +3,9 @@ import numpy as np
 import os
 import joblib
 import warnings
+from datetime import date as _date
+from state_manager_redis import MarketStateManager
+from daily_sync import run_daily_sync
 
 warnings.filterwarnings('ignore')
 
@@ -58,12 +61,25 @@ def add_features(df):
 
     return df
 
+def sync_data_if_needed(target_date_str, _files=None):
+    """
+    Delegate to the canonical daily_sync module.
+    Downloads missing daily OHLCV data from yfinance, updates parquet files,
+    writes to InfluxDB, and refreshes Redis macro context.
+    """
+    target = _date.fromisoformat(target_date_str)
+    run_daily_sync(target_date=target)
+
+
 def run_historical_playback_for_date(target_date_str="2019-11-11"):
     print(f"\n🚀 Running Historical Playback for Date: {target_date_str}")
     target_date = pd.to_datetime(target_date_str)
     
     files = [f for f in os.listdir(features_dir) if f.endswith('.parquet')]
     print(f"Scanning {len(files)} ticker files...")
+    
+    # Sync missing data if target_date is in the future relative to our DB
+    sync_data_if_needed(target_date_str, files)
     
     snapshot_rows = []
     minervini_passed = []
@@ -181,4 +197,4 @@ def run_historical_playback_for_date(target_date_str="2019-11-11"):
 
 if __name__ == "__main__":
     # Play back a historical day
-    run_historical_playback_for_date("2026-01-01")
+    run_historical_playback_for_date("2026-06-12")
