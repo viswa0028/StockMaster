@@ -142,6 +142,26 @@ def _download_missing(symbol: str, start: date, end: date) -> pd.DataFrame | Non
         return None
 
 
+def _clean_columns(df: pd.DataFrame) -> pd.DataFrame:
+    import ast
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.get_level_values(0)
+    new_cols = []
+    for col in df.columns:
+        if isinstance(col, str) and col.startswith("(") and col.endswith(")"):
+            try:
+                val = ast.literal_eval(col)
+                if isinstance(val, tuple) and len(val) > 0:
+                    new_cols.append(val[0])
+                    continue
+            except Exception:
+                pass
+        new_cols.append(col)
+    df.columns = new_cols
+    df = df.loc[:, ~df.columns.duplicated()]
+    return df
+
+
 def _update_single_ticker(symbol: str, start: date, end: date, writer: InfluxWriter) -> bool:
     """
     Downloads new daily bars for one ticker, appends to parquet, writes to InfluxDB.
@@ -158,8 +178,7 @@ def _update_single_ticker(symbol: str, start: date, end: date, writer: InfluxWri
     if os.path.exists(parquet_path):
         try:
             existing = pd.read_parquet(parquet_path)
-            if isinstance(existing.columns, pd.MultiIndex):
-                existing.columns = existing.columns.get_level_values(0)
+            existing = _clean_columns(existing)
 
             # Align timezone handling
             if existing.index.tz is not None and new_df.index.tz is None:

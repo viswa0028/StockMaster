@@ -3,3 +3,4 @@ data/
 docker-compose.yml
 saved_models/
 catboost_info/
+random_testing.py

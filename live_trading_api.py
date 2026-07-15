@@ -186,7 +186,12 @@ def run_live_sync():
             c5 = latest["Close"] >= week52_low  * 1.30
             c6 = latest["Close"] <= week52_high * 1.25
 
-            passed_macro = c1 and c2 and c3 and c4 and c5 and c6
+            ma_values = [latest["SMA_20"], latest["SMA_50"], latest["SMA_150"], latest["SMA_200"]]
+            ma_spread_pct = (max(ma_values) - min(ma_values)) / latest["Close"] * 100
+            c7 = ma_spread_pct <= 5.0
+            rsi_buy = latest["RSI"] > 55
+
+            passed_macro = c1 and c2 and c3 and c4 and c5 and c6 and rsi_buy and c7
 
             row = latest[feature_cols].to_dict()
             row["Symbol"]       = symbol

@@ -78,6 +78,7 @@ class MarketStateManager:
 
             df = pd.DataFrame({"Close": closes})
             context = {
+                "SMA_20":          round(float(df["Close"].rolling(20).mean().iloc[-1]), 4),
                 "SMA_50":          round(float(df["Close"].rolling(50).mean().iloc[-1]), 4),
                 "SMA_150":         round(float(df["Close"].rolling(150).mean().iloc[-1]), 4),
                 "SMA_200":         round(float(df["Close"].rolling(200).mean().iloc[-1]), 4),

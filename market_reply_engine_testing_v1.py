@@ -18,7 +18,6 @@ missing = [f for f in required_files if not os.path.exists(os.path.join(saved_di
 if missing:
     raise FileNotFoundError(f"Missing model files: {missing}. Please run train_v2.py first.")
 
-# Load models and configurations
 print("Loading pre-trained models and configurations...")
 trained_lgbm = joblib.load(f"{saved_dir}/lgbm.joblib")
 trained_xgb = joblib.load(f"{saved_dir}/xgb.joblib")
@@ -78,7 +77,6 @@ def run_historical_playback_for_date(target_date_str="2019-11-11"):
     files = [f for f in os.listdir(features_dir) if f.endswith('.parquet')]
     print(f"Scanning {len(files)} ticker files...")
     
-    # Sync missing data if target_date is in the future relative to our DB
     sync_data_if_needed(target_date_str, files)
     
     snapshot_rows = []
@@ -118,10 +116,14 @@ def run_historical_playback_for_date(target_date_str="2019-11-11"):
             
             c5 = latest['Close'] >= week52_low * 1.30
             c6 = latest['Close'] <= week52_high * 1.25
+
+            ma_values = [latest["SMA_20"], latest["SMA_50"], latest["SMA_150"], latest["SMA_200"]]
+            ma_spread_pct = (max(ma_values) - min(ma_values)) / latest["Close"] * 100
+            c7 = ma_spread_pct <= 10.0
+            rsi_buy = latest["RSI"] > 55
+
+            passed_macro = c1 and c2 and c3 and c4 and c5 and c6 #and rsi_buy #and c7
             
-            passed_macro = c1 and c2 and c3 and c4 and c5 and c6
-            
-            # Extract features for ranking
             features_dict = latest[feature_cols].to_dict()
             features_dict['Symbol'] = symbol
             features_dict['Close'] = latest['Close']
@@ -186,7 +188,7 @@ def run_historical_playback_for_date(target_date_str="2019-11-11"):
         print(f"\n=======================================================")
         print(f"  TOP BUY CANDIDATES ON {target_date_str} (Ensemble Ranked)")
         print(f"=======================================================")
-        print(ranked_df[['Rank', 'Symbol', 'Close', 'RSI', 'Final_Score']].head(20).to_string(index=False))
+        print(ranked_df[['Rank', 'Symbol', 'Close', 'RSI', 'Final_Score']].head(50).to_string(index=False))
         
         # Save output
         out_file = f"data/ranked_buy_{target_date_str}.csv"
@@ -197,4 +199,4 @@ def run_historical_playback_for_date(target_date_str="2019-11-11"):
 
 if __name__ == "__main__":
     # Play back a historical day
-    run_historical_playback_for_date("2026-06-12")
+    run_historical_playback_for_date("2026-06-17")
